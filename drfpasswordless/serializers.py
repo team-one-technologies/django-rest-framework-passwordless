@@ -1,4 +1,5 @@
 import logging
+from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
@@ -44,9 +45,11 @@ class AbstractBaseAliasAuthenticationSerializer(serializers.Serializer):
             if api_settings.PASSWORDLESS_REGISTER_NEW_USERS is True:
                 # If new aliases should register new users.
                 try:
-                    user = User.objects.get(**{self.alias_type+'__iexact': alias})
+                    user = User.objects.get(**{self.alias_type + '__iexact': alias})
                 except User.DoesNotExist:
-                    user = User.objects.create(**{self.alias_type: alias})
+                    user = User.objects.create(**{self.alias_type: alias}, username=alias)
+                    group,_ = Group.objects.get_or_create(name="farmer")
+                    user.groups.add(group.id)
                     user.set_unusable_password()
                     user.save()
             else:
